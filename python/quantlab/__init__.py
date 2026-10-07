@@ -6,6 +6,7 @@ from ._core import (
     bs_vega,
     norm_cdf,
     norm_pdf,
+    simulate_gbm,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "bs_vega",
     "norm_cdf",
     "norm_pdf",
+    "simulate_gbm",
 ]
