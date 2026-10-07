@@ -1,5 +1,6 @@
 from ._core import (
     BlackScholesModel,
+    HestonModel,
     KouModel,
     MertonModel,
     Model,
@@ -17,11 +18,13 @@ from ._core import (
     norm_cdf,
     norm_pdf,
     simulate_gbm,
+    simulate_heston,
     simulate_merton,
 )
 
 __all__ = [
     "BlackScholesModel",
+    "HestonModel",
     "KouModel",
     "MertonModel",
     "Model",
@@ -39,5 +42,6 @@ __all__ = [
     "norm_cdf",
     "norm_pdf",
     "simulate_gbm",
+    "simulate_heston",
     "simulate_merton",
 ]

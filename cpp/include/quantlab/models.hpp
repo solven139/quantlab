@@ -94,4 +94,31 @@ private:
     double r_, sigma_, theta_, beta_;
 };
 
+// Heston stochastic volatility (book Ch 8.2-8.3):
+//   dS/S = r dt + sqrt(v) dW_x
+//   dv   = kappa (vbar - v) dt + gamma sqrt(v) dW_v,    dW_x dW_v = rho dt
+// v is the variance (volatility squared). kappa: speed of mean reversion, vbar: long-run
+// variance, gamma: volatility of variance ("vol of vol"), rho: correlation, v0: today's variance.
+class HestonModel : public Model {
+public:
+    HestonModel(double r, double kappa, double vbar, double gamma, double rho, double v0);
+
+    double rate() const override { return r_; }
+    std::complex<double> char_fn(double u, double T) const override;
+    double cumulant1(double T) const override;
+    double cumulant2(double T) const override;
+    double cumulant4(double T) const override;
+    // Feller condition 2 kappa vbar >= gamma^2: if it holds, v(t) never reaches zero
+    bool feller_satisfied() const;
+
+    double kappa() const { return kappa_; }
+    double vbar() const { return vbar_; }
+    double gamma() const { return gamma_; }
+    double rho() const { return rho_; }
+    double v0() const { return v0_; }
+
+private:
+    double r_, kappa_, vbar_, gamma_, rho_, v0_;
+};
+
 } // namespace quantlab

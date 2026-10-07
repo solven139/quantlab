@@ -13,6 +13,7 @@
 #include "quantlab/models.hpp"
 #include "quantlab/cos.hpp"
 #include "quantlab/jump_paths.hpp"
+#include "quantlab/heston_paths.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -108,6 +109,17 @@ PYBIND11_MODULE(_core, m) {
              py::arg("r"), py::arg("sigma"), py::arg("theta"), py::arg("beta"))
         .def("drift_correction", &VarianceGammaModel::drift_correction);
 
+    py::class_<HestonModel, Model>(m, "HestonModel")
+        .def(py::init<double, double, double, double, double, double>(),
+             py::arg("r"), py::arg("kappa"), py::arg("vbar"), py::arg("gamma"),
+             py::arg("rho"), py::arg("v0"))
+        .def("feller_satisfied", &HestonModel::feller_satisfied)
+        .def("kappa", &HestonModel::kappa)
+        .def("vbar", &HestonModel::vbar)
+        .def("gamma", &HestonModel::gamma)
+        .def("rho", &HestonModel::rho)
+        .def("v0", &HestonModel::v0);
+
     // ---- COS method ----
     m.def("cos_price", &cos_price,
           py::arg("model"), py::arg("type"), py::arg("S0"), py::arg("K"), py::arg("T"),
@@ -130,4 +142,20 @@ PYBIND11_MODULE(_core, m) {
         py::arg("sigma_j"), py::arg("T"), py::arg("n_steps"), py::arg("n_paths"),
         py::arg("seed") = 42,
         "Simulate Merton jump-diffusion paths; array of shape (n_paths, n_steps + 1)");
+
+    m.def("simulate_heston",
+        [](double S0, double r, double kappa, double vbar, double gamma, double rho, double v0,
+           double T, int n_steps, int n_paths, std::uint64_t seed) {
+            HestonPaths res = simulate_heston(S0, r, kappa, vbar, gamma, rho, v0,
+                                              T, n_steps, n_paths, seed);
+            py::array_t<double> S({n_paths, n_steps + 1});
+            py::array_t<double> v({n_paths, n_steps + 1});
+            std::copy(res.S.begin(), res.S.end(), S.mutable_data());
+            std::copy(res.v.begin(), res.v.end(), v.mutable_data());
+            return py::make_tuple(S, v, res.zero_hits);
+        },
+        py::arg("S0"), py::arg("r"), py::arg("kappa"), py::arg("vbar"), py::arg("gamma"),
+        py::arg("rho"), py::arg("v0"), py::arg("T"), py::arg("n_steps"), py::arg("n_paths"),
+        py::arg("seed") = 42,
+        "Euler (full truncation) Heston paths; returns (S, v, zero_hits)");
 }
