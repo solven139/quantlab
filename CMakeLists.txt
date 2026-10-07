@@ -11,6 +11,7 @@ find_package(pybind11 CONFIG REQUIRED)
 add_library(quantlab_core STATIC
     cpp/src/black_scholes.cpp
     cpp/src/gbm.cpp
+    cpp/src/hedging.cpp
 )
 target_include_directories(quantlab_core PUBLIC cpp/include)
 set_target_properties(quantlab_core PROPERTIES POSITION_INDEPENDENT_CODE ON)

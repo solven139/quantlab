@@ -6,6 +6,7 @@
 #include <vector>
 #include "quantlab/black_scholes.hpp"
 #include "quantlab/gbm.hpp"
+#include "quantlab/hedging.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -43,4 +44,18 @@ PYBIND11_MODULE(_core, m) {
         py::arg("S0"), py::arg("r"), py::arg("sigma"), py::arg("T"),
         py::arg("n_steps"), py::arg("n_paths"), py::arg("seed") = 42,
         "Simulate GBM paths; returns array of shape (n_paths, n_steps + 1)");
+
+        m.def("delta_hedge_pnl",
+        [](double S0, double K, double T, double r, double sigma_true, double sigma_hedge,
+           int n_rebalance, int n_paths, std::uint64_t seed) {
+            std::vector<double> v = delta_hedge_pnl(S0, K, T, r, sigma_true, sigma_hedge,
+                                                    n_rebalance, n_paths, seed);
+            py::array_t<double> out(static_cast<py::ssize_t>(v.size()));
+            std::copy(v.begin(), v.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("S0"), py::arg("K"), py::arg("T"), py::arg("r"),
+        py::arg("sigma_true"), py::arg("sigma_hedge"),
+        py::arg("n_rebalance"), py::arg("n_paths"), py::arg("seed") = 42,
+        "Final P&L of delta-hedging a sold call, one value per path");
 }
