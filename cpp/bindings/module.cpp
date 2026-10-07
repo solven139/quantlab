@@ -1,5 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/complex.h>
+#include <pybind11/stl.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -8,6 +10,8 @@
 #include "quantlab/gbm.hpp"
 #include "quantlab/hedging.hpp"
 #include "quantlab/implied_vol.hpp"
+#include "quantlab/models.hpp"
+#include "quantlab/cos.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -46,7 +50,7 @@ PYBIND11_MODULE(_core, m) {
         py::arg("n_steps"), py::arg("n_paths"), py::arg("seed") = 42,
         "Simulate GBM paths; returns array of shape (n_paths, n_steps + 1)");
 
-        m.def("delta_hedge_pnl",
+    m.def("delta_hedge_pnl",
         [](double S0, double K, double T, double r, double sigma_true, double sigma_hedge,
            int n_rebalance, int n_paths, std::uint64_t seed) {
             std::vector<double> v = delta_hedge_pnl(S0, K, T, r, sigma_true, sigma_hedge,
@@ -60,7 +64,7 @@ PYBIND11_MODULE(_core, m) {
         py::arg("n_rebalance"), py::arg("n_paths"), py::arg("seed") = 42,
         "Final P&L of delta-hedging a sold call, one value per path");
 
-        m.def("implied_vol", &implied_vol,
+    m.def("implied_vol", &implied_vol,
           py::arg("type"), py::arg("price"), py::arg("S0"), py::arg("K"),
           py::arg("T"), py::arg("r"),
           "Black-Scholes implied volatility (Newton-Raphson with bisection fallback)");
@@ -74,4 +78,25 @@ PYBIND11_MODULE(_core, m) {
         py::arg("type"), py::arg("price"), py::arg("S0"), py::arg("K"),
         py::arg("T"), py::arg("r"),
         "Every iterate of the implied-vol solver, first guess to final answer");
+
+    // ---- Models (Step 3+) ----
+    py::class_<Model>(m, "Model")
+        .def("rate", &Model::rate)
+        .def("char_fn", &Model::char_fn, py::arg("u"), py::arg("T"))
+        .def("cumulant1", &Model::cumulant1, py::arg("T"))
+        .def("cumulant2", &Model::cumulant2, py::arg("T"))
+        .def("cumulant4", &Model::cumulant4, py::arg("T"));
+
+    py::class_<BlackScholesModel, Model>(m, "BlackScholesModel")
+        .def(py::init<double, double>(), py::arg("r"), py::arg("sigma"))
+        .def("sigma", &BlackScholesModel::sigma);
+
+    // ---- COS method ----
+    m.def("cos_price", &cos_price,
+          py::arg("model"), py::arg("type"), py::arg("S0"), py::arg("K"), py::arg("T"),
+          py::arg("N") = 128, py::arg("L") = 8.0,
+          "European option price by the COS method for any Model");
+    m.def("cos_density", &cos_density,
+          py::arg("model"), py::arg("T"), py::arg("xs"), py::arg("N") = 128, py::arg("L") = 8.0,
+          "Density of log(S(T)/S0) recovered from the characteristic function");
 }

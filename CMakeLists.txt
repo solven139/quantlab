@@ -13,6 +13,8 @@ add_library(quantlab_core STATIC
     cpp/src/gbm.cpp
     cpp/src/hedging.cpp
     cpp/src/implied_vol.cpp
+    cpp/src/models.cpp
+    cpp/src/cos.cpp
 )
 target_include_directories(quantlab_core PUBLIC cpp/include)
 set_target_properties(quantlab_core PROPERTIES POSITION_INDEPENDENT_CODE ON)

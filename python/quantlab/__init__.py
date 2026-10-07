@@ -1,10 +1,14 @@
 from ._core import (
+    BlackScholesModel,
+    Model,
     OptionType,
     bs_delta,
+    delta_hedge_pnl,
     bs_gamma,
     bs_price,
     bs_vega,
-    delta_hedge_pnl,
+    cos_density,
+    cos_price,
     implied_vol,
     implied_vol_iterates,
     norm_cdf,
@@ -13,12 +17,16 @@ from ._core import (
 )
 
 __all__ = [
+    "BlackScholesModel",
+    "Model",
     "OptionType",
     "bs_delta",
+    "delta_hedge_pnl",
     "bs_gamma",
     "bs_price",
     "bs_vega",
-    "delta_hedge_pnl",
+    "cos_density",
+    "cos_price",
     "implied_vol",
     "implied_vol_iterates",
     "norm_cdf",
