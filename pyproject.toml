@@ -15,3 +15,6 @@ test = ["pytest"]
 [tool.scikit-build]
 wheel.packages = ["python/quantlab"]
 cmake.build-type = "Release"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

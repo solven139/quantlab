@@ -14,6 +14,7 @@
 #include "quantlab/cos.hpp"
 #include "quantlab/jump_paths.hpp"
 #include "quantlab/heston_paths.hpp"
+#include "quantlab/mc_schemes.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -158,4 +159,48 @@ PYBIND11_MODULE(_core, m) {
         py::arg("rho"), py::arg("v0"), py::arg("T"), py::arg("n_steps"), py::arg("n_paths"),
         py::arg("seed") = 42,
         "Euler (full truncation) Heston paths; returns (S, v, zero_hits)");
+
+    // ---- Monte Carlo lab (Step 6) ----
+    py::enum_<CirScheme>(m, "CirScheme")
+        .value("Euler", CirScheme::Euler)
+        .value("Exact", CirScheme::Exact)
+        .value("QE", CirScheme::QE);
+
+    auto to_numpy = [](const std::vector<double>& v) {
+        py::array_t<double> out(static_cast<py::ssize_t>(v.size()));
+        std::copy(v.begin(), v.end(), out.mutable_data());
+        return out;
+    };
+
+    m.def("gbm_schemes",
+        [to_numpy](double S0, double r, double sigma, double T, int n_steps, int n_paths,
+                   std::uint64_t seed) {
+            GbmSchemeResult res = gbm_schemes(S0, r, sigma, T, n_steps, n_paths, seed);
+            return py::make_tuple(to_numpy(res.exact), to_numpy(res.euler),
+                                  to_numpy(res.milstein));
+        },
+        py::arg("S0"), py::arg("r"), py::arg("sigma"), py::arg("T"), py::arg("n_steps"),
+        py::arg("n_paths"), py::arg("seed") = 42,
+        "Terminal S(T) under exact, Euler and Milstein with the same Brownian paths");
+
+    m.def("cir_step_samples",
+        [to_numpy](CirScheme scheme, double v0, double kappa, double vbar, double gamma,
+                   double dt, int n, std::uint64_t seed) {
+            return to_numpy(cir_step_samples(scheme, v0, kappa, vbar, gamma, dt, n, seed));
+        },
+        py::arg("scheme"), py::arg("v0"), py::arg("kappa"), py::arg("vbar"), py::arg("gamma"),
+        py::arg("dt"), py::arg("n"), py::arg("seed") = 42,
+        "n samples of v(dt) for a CIR process started at v0, using the chosen scheme");
+
+    m.def("heston_terminal",
+        [to_numpy](CirScheme scheme, double S0, double r, double kappa, double vbar,
+                   double gamma, double rho, double v0, double T, int n_steps, int n_paths,
+                   std::uint64_t seed) {
+            return to_numpy(heston_terminal(scheme, S0, r, kappa, vbar, gamma, rho, v0, T,
+                                            n_steps, n_paths, seed));
+        },
+        py::arg("scheme"), py::arg("S0"), py::arg("r"), py::arg("kappa"), py::arg("vbar"),
+        py::arg("gamma"), py::arg("rho"), py::arg("v0"), py::arg("T"), py::arg("n_steps"),
+        py::arg("n_paths"), py::arg("seed") = 42,
+        "Heston S(T) by almost-exact simulation with the chosen variance scheme");
 }
