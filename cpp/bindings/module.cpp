@@ -12,6 +12,7 @@
 #include "quantlab/implied_vol.hpp"
 #include "quantlab/models.hpp"
 #include "quantlab/cos.hpp"
+#include "quantlab/jump_paths.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -91,6 +92,22 @@ PYBIND11_MODULE(_core, m) {
         .def(py::init<double, double>(), py::arg("r"), py::arg("sigma"))
         .def("sigma", &BlackScholesModel::sigma);
 
+    py::class_<MertonModel, Model>(m, "MertonModel")
+        .def(py::init<double, double, double, double, double>(),
+             py::arg("r"), py::arg("sigma"), py::arg("xi"), py::arg("mu_j"), py::arg("sigma_j"))
+        .def("drift_correction", &MertonModel::drift_correction);
+
+    py::class_<KouModel, Model>(m, "KouModel")
+        .def(py::init<double, double, double, double, double, double>(),
+             py::arg("r"), py::arg("sigma"), py::arg("xi"), py::arg("p"),
+             py::arg("eta1"), py::arg("eta2"))
+        .def("drift_correction", &KouModel::drift_correction);
+
+    py::class_<VarianceGammaModel, Model>(m, "VarianceGammaModel")
+        .def(py::init<double, double, double, double>(),
+             py::arg("r"), py::arg("sigma"), py::arg("theta"), py::arg("beta"))
+        .def("drift_correction", &VarianceGammaModel::drift_correction);
+
     // ---- COS method ----
     m.def("cos_price", &cos_price,
           py::arg("model"), py::arg("type"), py::arg("S0"), py::arg("K"), py::arg("T"),
@@ -99,4 +116,18 @@ PYBIND11_MODULE(_core, m) {
     m.def("cos_density", &cos_density,
           py::arg("model"), py::arg("T"), py::arg("xs"), py::arg("N") = 128, py::arg("L") = 8.0,
           "Density of log(S(T)/S0) recovered from the characteristic function");
+
+    m.def("simulate_merton",
+        [](double S0, double r, double sigma, double xi, double mu_j, double sigma_j,
+           double T, int n_steps, int n_paths, std::uint64_t seed) {
+            std::vector<double> flat = simulate_merton(S0, r, sigma, xi, mu_j, sigma_j,
+                                                       T, n_steps, n_paths, seed);
+            py::array_t<double> out({n_paths, n_steps + 1});
+            std::copy(flat.begin(), flat.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("S0"), py::arg("r"), py::arg("sigma"), py::arg("xi"), py::arg("mu_j"),
+        py::arg("sigma_j"), py::arg("T"), py::arg("n_steps"), py::arg("n_paths"),
+        py::arg("seed") = 42,
+        "Simulate Merton jump-diffusion paths; array of shape (n_paths, n_steps + 1)");
 }

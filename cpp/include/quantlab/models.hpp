@@ -40,4 +40,58 @@ private:
     double sigma_;
 };
 
+// Merton jump diffusion (book Ch 5.1): GBM plus jumps that arrive as a Poisson process
+// with intensity xi (jumps per year). Each jump multiplies S by e^J, J ~ Normal(mu_j, sigma_j^2).
+//   dS/S = (r - omega) dt + sigma dW + (e^J - 1) dN,   omega = xi * (E[e^J] - 1)
+class MertonModel : public Model {
+public:
+    MertonModel(double r, double sigma, double xi, double mu_j, double sigma_j);
+
+    double rate() const override { return r_; }
+    std::complex<double> char_fn(double u, double T) const override;
+    double cumulant1(double T) const override;
+    double cumulant2(double T) const override;
+    double cumulant4(double T) const override;
+    double drift_correction() const;  // omega: keeps the discounted stock a martingale
+
+private:
+    double r_, sigma_, xi_, mu_j_, sigma_j_;
+};
+
+// Kou double-exponential jump diffusion (book Ch 5.1.3): like Merton, but a jump is
+// upward with probability p (size ~ Exponential(eta1)) or downward with probability 1-p
+// (size ~ -Exponential(eta2)). Asymmetric, fat-tailed jumps. Needs eta1 > 1.
+class KouModel : public Model {
+public:
+    KouModel(double r, double sigma, double xi, double p, double eta1, double eta2);
+
+    double rate() const override { return r_; }
+    std::complex<double> char_fn(double u, double T) const override;
+    double cumulant1(double T) const override;
+    double cumulant2(double T) const override;
+    double cumulant4(double T) const override;
+    double drift_correction() const;
+
+private:
+    double r_, sigma_, xi_, p_, eta1_, eta2_;
+};
+
+// Variance Gamma (book Ch 5.4.1): no Brownian part at all. Brownian motion with drift
+// theta and volatility sigma, run on a random Gamma "business clock" with variance rate beta.
+// Infinitely many small jumps. theta < 0 gives a negative skew, beta controls the kurtosis.
+class VarianceGammaModel : public Model {
+public:
+    VarianceGammaModel(double r, double sigma, double theta, double beta);
+
+    double rate() const override { return r_; }
+    std::complex<double> char_fn(double u, double T) const override;
+    double cumulant1(double T) const override;
+    double cumulant2(double T) const override;
+    double cumulant4(double T) const override;
+    double drift_correction() const;  // omega-bar of book eq. 5.59
+
+private:
+    double r_, sigma_, theta_, beta_;
+};
+
 } // namespace quantlab
