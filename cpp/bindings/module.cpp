@@ -16,4 +16,13 @@ PYBIND11_MODULE(_core, m) {
           py::arg("type"), py::arg("S0"), py::arg("K"),
           py::arg("T"), py::arg("r"), py::arg("sigma"),
           "Black-Scholes European option price");
+
+    m.def("norm_pdf", &norm_pdf, py::arg("x"));
+    m.def("bs_delta", &bs_delta,
+          py::arg("type"), py::arg("S0"), py::arg("K"),
+          py::arg("T"), py::arg("r"), py::arg("sigma"));
+    m.def("bs_gamma", &bs_gamma,
+          py::arg("S0"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"));
+    m.def("bs_vega", &bs_vega,
+          py::arg("S0"), py::arg("K"), py::arg("T"), py::arg("r"), py::arg("sigma"));
 }
