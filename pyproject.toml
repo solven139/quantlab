@@ -1,0 +1,17 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "quantlab"
+version = "0.1.0"
+description = "Interactive simulator for the models in Oosterlee & Grzelak"
+requires-python = ">=3.10"
+dependencies = ["numpy", "scipy", "streamlit", "plotly"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.scikit-build]
+wheel.packages = ["python/quantlab"]
+cmake.build-type = "Release"
