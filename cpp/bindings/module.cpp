@@ -7,6 +7,7 @@
 #include "quantlab/black_scholes.hpp"
 #include "quantlab/gbm.hpp"
 #include "quantlab/hedging.hpp"
+#include "quantlab/implied_vol.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -58,4 +59,19 @@ PYBIND11_MODULE(_core, m) {
         py::arg("sigma_true"), py::arg("sigma_hedge"),
         py::arg("n_rebalance"), py::arg("n_paths"), py::arg("seed") = 42,
         "Final P&L of delta-hedging a sold call, one value per path");
+
+        m.def("implied_vol", &implied_vol,
+          py::arg("type"), py::arg("price"), py::arg("S0"), py::arg("K"),
+          py::arg("T"), py::arg("r"),
+          "Black-Scholes implied volatility (Newton-Raphson with bisection fallback)");
+    m.def("implied_vol_iterates",
+        [](OptionType type, double price, double S0, double K, double T, double r) {
+            std::vector<double> v = implied_vol_iterates(type, price, S0, K, T, r);
+            py::array_t<double> out(static_cast<py::ssize_t>(v.size()));
+            std::copy(v.begin(), v.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("type"), py::arg("price"), py::arg("S0"), py::arg("K"),
+        py::arg("T"), py::arg("r"),
+        "Every iterate of the implied-vol solver, first guess to final answer");
 }

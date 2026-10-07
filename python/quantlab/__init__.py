@@ -4,10 +4,12 @@ from ._core import (
     bs_gamma,
     bs_price,
     bs_vega,
+    delta_hedge_pnl,
+    implied_vol,
+    implied_vol_iterates,
     norm_cdf,
     norm_pdf,
     simulate_gbm,
-    delta_hedge_pnl,
 )
 
 __all__ = [
@@ -16,8 +18,10 @@ __all__ = [
     "bs_gamma",
     "bs_price",
     "bs_vega",
+    "delta_hedge_pnl",
+    "implied_vol",
+    "implied_vol_iterates",
     "norm_cdf",
     "norm_pdf",
     "simulate_gbm",
-    "delta_hedge_pnl",
 ]
