@@ -16,6 +16,7 @@
 #include "quantlab/heston_paths.hpp"
 #include "quantlab/mc_schemes.hpp"
 #include "quantlab/local_vol.hpp"
+#include "quantlab/hull_white.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -252,4 +253,39 @@ PYBIND11_MODULE(_core, m) {
         py::arg("gamma"), py::arg("rho"), py::arg("v0"), py::arg("times"),
         py::arg("steps_per_year"), py::arg("n_paths"), py::arg("seed") = 42,
         "Heston AES paths sampled at the given times; array (n_paths, len(times))");
+
+    // ---- Interest rates: Hull-White (Step 8) ----
+    py::class_<NelsonSiegelCurve>(m, "NelsonSiegelCurve")
+        .def(py::init<double, double, double, double>(),
+             py::arg("b0"), py::arg("b1"), py::arg("b2"), py::arg("tau"))
+        .def("zero_rate", &NelsonSiegelCurve::zero_rate, py::arg("T"))
+        .def("discount", &NelsonSiegelCurve::discount, py::arg("T"))
+        .def("inst_forward", &NelsonSiegelCurve::inst_forward, py::arg("T"))
+        .def("forward_slope", &NelsonSiegelCurve::forward_slope, py::arg("T"));
+
+    py::class_<HullWhiteModel>(m, "HullWhiteModel")
+        .def(py::init<double, double, NelsonSiegelCurve>(),
+             py::arg("lambda_"), py::arg("eta"), py::arg("curve"))
+        .def("theta", &HullWhiteModel::theta, py::arg("t"))
+        .def("psi", &HullWhiteModel::psi, py::arg("t"))
+        .def("r0", &HullWhiteModel::r0)
+        .def("mean_r", &HullWhiteModel::mean_r, py::arg("t"))
+        .def("var_r", &HullWhiteModel::var_r, py::arg("t"))
+        .def("zcb", &HullWhiteModel::zcb, py::arg("t"), py::arg("T"), py::arg("r"))
+        .def("curve", &HullWhiteModel::curve)
+        .def("lambda_", &HullWhiteModel::lambda)
+        .def("eta", &HullWhiteModel::eta);
+
+    m.def("simulate_hull_white",
+        [](const HullWhiteModel& model, double T, int n_steps, int n_paths, std::uint64_t seed) {
+            HullWhitePaths res = simulate_hull_white(model, T, n_steps, n_paths, seed);
+            py::array_t<double> r({n_paths, n_steps + 1});
+            py::array_t<double> I({n_paths, n_steps + 1});
+            std::copy(res.r.begin(), res.r.end(), r.mutable_data());
+            std::copy(res.integral.begin(), res.integral.end(), I.mutable_data());
+            return py::make_tuple(r, I);
+        },
+        py::arg("model"), py::arg("T"), py::arg("n_steps"), py::arg("n_paths"),
+        py::arg("seed") = 42,
+        "Hull-White short-rate paths and the running integral of r; returns (r, integral)");
 }
