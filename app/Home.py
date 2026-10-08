@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 
 REPO_URL = "https://github.com/solven139/quantlab"   # change if your repo has another name
@@ -52,12 +54,26 @@ SECTIONS = [
     ]),
 ]
 
+# Find each page by its number prefix ("4_..."), so the cards still work if a file name
+# differs in spelling or capitalisation (Linux servers are case-sensitive, Windows is not).
+PAGES_DIR = Path(__file__).parent / "pages"
+BY_NUMBER = {p.name.split("_", 1)[0]: f"pages/{p.name}" for p in PAGES_DIR.glob("*.py")}
+
+
+def resolve(path):
+    return BY_NUMBER.get(Path(path).name.split("_", 1)[0])
+
+
 for title, pages in SECTIONS:
     st.subheader(title)
     cols = st.columns(3)
     for i, (path, label, icon, blurb, ch) in enumerate(pages):
         with cols[i % 3].container(border=True):
-            st.page_link(path, label=f"**{label}**", icon=icon)
+            target = resolve(path)
+            if target:
+                st.page_link(target, label=f"**{label}**", icon=icon)
+            else:
+                st.markdown(f"{icon} **{label}**")
             st.caption(f"{blurb}  \nBook {ch}")
 
 st.divider()
