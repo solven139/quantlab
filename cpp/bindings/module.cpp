@@ -15,6 +15,7 @@
 #include "quantlab/jump_paths.hpp"
 #include "quantlab/heston_paths.hpp"
 #include "quantlab/mc_schemes.hpp"
+#include "quantlab/local_vol.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -203,4 +204,52 @@ PYBIND11_MODULE(_core, m) {
         py::arg("gamma"), py::arg("rho"), py::arg("v0"), py::arg("T"), py::arg("n_steps"),
         py::arg("n_paths"), py::arg("seed") = 42,
         "Heston S(T) by almost-exact simulation with the chosen variance scheme");
+
+    // ---- Local volatility (Step 7) ----
+    m.def("dupire_local_vol", &dupire_local_vol,
+          py::arg("model"), py::arg("S0"), py::arg("K"), py::arg("T"),
+          py::arg("dK"), py::arg("dT"),
+          "Dupire local volatility from a model's call prices (finite differences)");
+
+    py::class_<LocalVolSurface>(m, "LocalVolSurface")
+        .def(py::init<const Model&, double, std::vector<double>, std::vector<double>>(),
+             py::arg("model"), py::arg("S0"), py::arg("strikes"), py::arg("maturities"))
+        .def("sigma", &LocalVolSurface::sigma, py::arg("S"), py::arg("t"))
+        .def("strikes", &LocalVolSurface::strikes)
+        .def("maturities", &LocalVolSurface::maturities)
+        .def("values", [](const LocalVolSurface& s) {
+            py::array_t<double> out({s.maturities().size(), s.strikes().size()});
+            std::copy(s.values().begin(), s.values().end(), out.mutable_data());
+            return out;
+        });
+
+    m.def("local_vol_at_times",
+        [](const LocalVolSurface& surface, double S0, double r, std::vector<double> times,
+           int steps_per_year, int n_paths, std::uint64_t seed) {
+            std::vector<double> v = local_vol_at_times(surface, S0, r, times, steps_per_year,
+                                                       n_paths, seed);
+            py::array_t<double> out({static_cast<py::ssize_t>(n_paths),
+                                     static_cast<py::ssize_t>(times.size())});
+            std::copy(v.begin(), v.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("surface"), py::arg("S0"), py::arg("r"), py::arg("times"),
+        py::arg("steps_per_year"), py::arg("n_paths"), py::arg("seed") = 42,
+        "Local vol paths sampled at the given times; array (n_paths, len(times))");
+
+    m.def("heston_at_times",
+        [](CirScheme scheme, double S0, double r, double kappa, double vbar, double gamma,
+           double rho, double v0, std::vector<double> times, int steps_per_year, int n_paths,
+           std::uint64_t seed) {
+            std::vector<double> v = heston_at_times(scheme, S0, r, kappa, vbar, gamma, rho, v0,
+                                                    times, steps_per_year, n_paths, seed);
+            py::array_t<double> out({static_cast<py::ssize_t>(n_paths),
+                                     static_cast<py::ssize_t>(times.size())});
+            std::copy(v.begin(), v.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("scheme"), py::arg("S0"), py::arg("r"), py::arg("kappa"), py::arg("vbar"),
+        py::arg("gamma"), py::arg("rho"), py::arg("v0"), py::arg("times"),
+        py::arg("steps_per_year"), py::arg("n_paths"), py::arg("seed") = 42,
+        "Heston AES paths sampled at the given times; array (n_paths, len(times))");
 }

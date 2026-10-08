@@ -18,6 +18,7 @@ add_library(quantlab_core STATIC
     cpp/src/jump_paths.cpp
     cpp/src/heston_paths.cpp
     cpp/src/mc_schemes.cpp
+    cpp/src/local_vol.cpp
 )
 target_include_directories(quantlab_core PUBLIC cpp/include)
 set_target_properties(quantlab_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
