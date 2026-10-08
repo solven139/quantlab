@@ -31,6 +31,12 @@ from ._core import (
     simulate_heston,
     simulate_hull_white,
     simulate_merton,
+    Swap,
+    cva,
+    par_swap_rate,
+    simulate_exposure,
+    swap_annuity,
+    swap_value_today,
 )
 
 __all__ = [
@@ -66,4 +72,10 @@ __all__ = [
     "simulate_heston",
     "simulate_hull_white",
     "simulate_merton",
+    "Swap",
+    "cva",
+    "par_swap_rate",
+    "simulate_exposure",
+    "swap_annuity",
+    "swap_value_today",
 ]

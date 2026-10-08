@@ -17,6 +17,7 @@
 #include "quantlab/mc_schemes.hpp"
 #include "quantlab/local_vol.hpp"
 #include "quantlab/hull_white.hpp"
+#include "quantlab/swap.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -288,4 +289,50 @@ PYBIND11_MODULE(_core, m) {
         py::arg("model"), py::arg("T"), py::arg("n_steps"), py::arg("n_paths"),
         py::arg("seed") = 42,
         "Hull-White short-rate paths and the running integral of r; returns (r, integral)");
+
+    // ---- Swaps, exposure and CVA (Step 9) ----
+    py::class_<Swap>(m, "Swap")
+        .def(py::init([](double notional, double K, double start, double end, double tau,
+                         bool payer) {
+                 Swap s; s.notional = notional; s.K = K; s.start = start; s.end = end;
+                 s.tau = tau; s.payer = payer;
+                 s.payment_dates();   // validates the schedule
+                 return s;
+             }),
+             py::arg("notional") = 1.0, py::arg("K") = 0.03, py::arg("start") = 0.0,
+             py::arg("end") = 10.0, py::arg("tau") = 1.0, py::arg("payer") = true)
+        .def_readwrite("notional", &Swap::notional)
+        .def_readwrite("K", &Swap::K)
+        .def_readwrite("start", &Swap::start)
+        .def_readwrite("end", &Swap::end)
+        .def_readwrite("tau", &Swap::tau)
+        .def_readwrite("payer", &Swap::payer)
+        .def("payment_dates", &Swap::payment_dates);
+
+    m.def("swap_value_today", &swap_value_today, py::arg("curve"), py::arg("swap"),
+          "Today's swap value from the curve (book eq. 12.12)");
+    m.def("swap_annuity", &swap_annuity, py::arg("curve"), py::arg("swap"));
+    m.def("par_swap_rate", &par_swap_rate, py::arg("curve"), py::arg("swap"),
+          "Fixed rate that makes the swap worth zero today (book eq. 12.14)");
+
+    m.def("simulate_exposure",
+        [](const HullWhiteModel& model, const std::vector<Swap>& trades, double horizon,
+           int steps_per_year, int n_paths, std::uint64_t seed) {
+            ExposureSimulation res =
+                simulate_exposure(model, trades, horizon, steps_per_year, n_paths, seed);
+            py::array_t<double> times(res.n_times);
+            py::array_t<double> values({res.n_trades, res.n_paths, res.n_times});
+            py::array_t<double> disc({res.n_paths, res.n_times});
+            std::copy(res.times.begin(), res.times.end(), times.mutable_data());
+            std::copy(res.values.begin(), res.values.end(), values.mutable_data());
+            std::copy(res.discount.begin(), res.discount.end(), disc.mutable_data());
+            return py::make_tuple(times, values, disc);
+        },
+        py::arg("model"), py::arg("trades"), py::arg("horizon"), py::arg("steps_per_year") = 24,
+        py::arg("n_paths") = 5000, py::arg("seed") = 42,
+        "Hull-White paths with every swap revalued on them; returns (times, values, discount) "
+        "with values of shape (n_trades, n_paths, n_times)");
+
+    m.def("cva", &cva, py::arg("times"), py::arg("ee"), py::arg("lgd"), py::arg("hazard"),
+          "Unilateral CVA = LGD * sum EE(t_k) * PD(t_{k-1}, t_k) (book eq. 12.61)");
 }
