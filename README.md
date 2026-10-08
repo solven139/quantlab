@@ -4,7 +4,7 @@
 
 **An interactive tour of the models in *Mathematical Modeling and Computation in Finance* (Oosterlee & Grzelak), built on a C++20 pricing engine.**
 
-▶ Live app: [quantlab-scottc.streamlit.app](https://quantlab-scott.streamlit.app)**
+▶ Live app: https://quantlab-scottc.streamlit.app/**
 
 Every model in quantitative finance rests on assumptions: constant volatility, no jumps, a fixed interest rate, a counterparty that always pays. Each page of QuantLab starts from one model and lets you change its parameters and relax its assumptions. You watch the paths, smiles, surfaces and exposure profiles respond, instead of only reading the formulas.
 
