@@ -52,6 +52,14 @@ SECTIONS = [
         ("pages/10_Exposure_and_CVA.py", "Exposure and CVA", "🏦",
          "Swap exposure, EE and PFE, CVA, DVA and netting.", "Ch 12"),
     ]),
+    ("From quotes back to models", [
+        ("pages/11_Calibration.py", "Calibration", "🎯",
+         "Fit Merton, Heston or Bates to a smile, and see which parameters the data can't "
+         "pin down.", "Ch 6, 8"),
+        ("pages/12_SABR_and_Implied_Density.py", "SABR and Implied Density", "🔔",
+         "Hagan's smile formula, and the market's probability distribution from "
+         "Breeden-Litzenberger.", "Ch 4.3"),
+    ]),
 ]
 
 # Find each page by its number prefix ("4_..."), so the cards still work if a file name
