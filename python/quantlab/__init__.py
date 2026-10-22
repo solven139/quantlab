@@ -1,4 +1,5 @@
 from ._core import (
+    BatesModel,
     BlackScholesModel,
     CirScheme,
     HestonModel,
@@ -17,6 +18,7 @@ from ._core import (
     cir_step_samples,
     cos_density,
     cos_price,
+    cos_prices,
     delta_hedge_pnl,
     dupire_local_vol,
     gbm_schemes,
@@ -31,6 +33,8 @@ from ._core import (
     simulate_heston,
     simulate_hull_white,
     simulate_merton,
+    sabr_implied_vol,
+    sabr_implied_vols,
     Swap,
     cva,
     par_swap_rate,
@@ -40,6 +44,7 @@ from ._core import (
 )
 
 __all__ = [
+    "BatesModel",
     "BlackScholesModel",
     "CirScheme",
     "HestonModel",
@@ -58,6 +63,7 @@ __all__ = [
     "cir_step_samples",
     "cos_density",
     "cos_price",
+    "cos_prices",
     "delta_hedge_pnl",
     "dupire_local_vol",
     "gbm_schemes",
@@ -72,6 +78,8 @@ __all__ = [
     "simulate_heston",
     "simulate_hull_white",
     "simulate_merton",
+    "sabr_implied_vol",
+    "sabr_implied_vols",
     "Swap",
     "cva",
     "par_swap_rate",
@@ -79,3 +87,18 @@ __all__ = [
     "swap_annuity",
     "swap_value_today",
 ]
+
+# Pure-Python layers built on the engine
+from .black import black_implied_vol, black_price, black_vega  # noqa: E402
+from .calibration import (CalibrationResult, calibrate, calibrate_series,  # noqa: E402
+                          otm_prices, profile)
+
+__all__ += ["black_implied_vol", "black_price", "black_vega", "CalibrationResult", "calibrate",
+            "calibrate_series", "otm_prices", "profile"]
+from .sabr import SabrFit, fit_sabr  # noqa: E402
+
+__all__ += ["SabrFit", "fit_sabr"]
+from .density import (ImpliedDensity, implied_density, otm_ivs_from_quotes,  # noqa: E402
+                      smooth_vols)
+
+__all__ += ["ImpliedDensity", "implied_density", "otm_ivs_from_quotes", "smooth_vols"]

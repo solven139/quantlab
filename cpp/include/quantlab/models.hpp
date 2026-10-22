@@ -121,4 +121,30 @@ private:
     double r_, kappa_, vbar_, gamma_, rho_, v0_;
 };
 
+// Bates model (book Ch 8.4.3): Heston stochastic volatility plus Merton jumps,
+//   dS/S = (r - omega) dt + sqrt(v) dW_x + (e^J - 1) dN,   J ~ Normal(mu_j, sigma_j^2),
+// with N a Poisson process of intensity xi, independent of (W_x, W_v).
+// Because the jumps are independent of the diffusion, log S(T) is a Heston part plus an
+// independent compound Poisson part. So the characteristic function is the PRODUCT of the
+// Heston one and the jump one, and every cumulant is the SUM of the two parts' cumulants.
+// No pricer needs to change: cos_price only sees the Model interface.
+class BatesModel : public Model {
+public:
+    BatesModel(double r, double kappa, double vbar, double gamma, double rho, double v0,
+               double xi, double mu_j, double sigma_j);
+
+    double rate() const override { return heston_.rate(); }
+    std::complex<double> char_fn(double u, double T) const override;
+    double cumulant1(double T) const override;
+    double cumulant2(double T) const override;
+    double cumulant4(double T) const override;
+    double drift_correction() const;   // omega = xi (E[e^J] - 1)
+    const HestonModel& heston() const { return heston_; }
+
+private:
+    std::complex<double> jump_char_fn(double u, double T) const;   // E[e^{iu (jump part)}]
+    HestonModel heston_;
+    double xi_, mu_j_, sigma_j_;
+};
+
 } // namespace quantlab

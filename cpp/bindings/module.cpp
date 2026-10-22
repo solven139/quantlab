@@ -18,6 +18,7 @@
 #include "quantlab/local_vol.hpp"
 #include "quantlab/hull_white.hpp"
 #include "quantlab/swap.hpp"
+#include "quantlab/sabr.hpp"
 
 namespace py = pybind11;
 using namespace quantlab;
@@ -124,11 +125,28 @@ PYBIND11_MODULE(_core, m) {
         .def("rho", &HestonModel::rho)
         .def("v0", &HestonModel::v0);
 
+    py::class_<BatesModel, Model>(m, "BatesModel")
+        .def(py::init<double, double, double, double, double, double, double, double, double>(),
+             py::arg("r"), py::arg("kappa"), py::arg("vbar"), py::arg("gamma"),
+             py::arg("rho"), py::arg("v0"), py::arg("xi"), py::arg("mu_j"), py::arg("sigma_j"))
+        .def("drift_correction", &BatesModel::drift_correction);
+
     // ---- COS method ----
     m.def("cos_price", &cos_price,
           py::arg("model"), py::arg("type"), py::arg("S0"), py::arg("K"), py::arg("T"),
           py::arg("N") = 128, py::arg("L") = 8.0,
           "European option price by the COS method for any Model");
+    m.def("cos_prices",
+        [](const Model& model, OptionType type, double S0, const std::vector<double>& Ks,
+           double T, int N, double L) {
+            std::vector<double> v = cos_prices(model, type, S0, Ks, T, N, L);
+            py::array_t<double> out(static_cast<py::ssize_t>(v.size()));
+            std::copy(v.begin(), v.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("model"), py::arg("type"), py::arg("S0"), py::arg("Ks"), py::arg("T"),
+        py::arg("N") = 128, py::arg("L") = 8.0,
+        "COS prices for many strikes, with the characteristic function evaluated once");
     m.def("cos_density", &cos_density,
           py::arg("model"), py::arg("T"), py::arg("xs"), py::arg("N") = 128, py::arg("L") = 8.0,
           "Density of log(S(T)/S0) recovered from the characteristic function");
@@ -335,4 +353,19 @@ PYBIND11_MODULE(_core, m) {
 
     m.def("cva", &cva, py::arg("times"), py::arg("ee"), py::arg("lgd"), py::arg("hazard"),
           "Unilateral CVA = LGD * sum EE(t_k) * PD(t_{k-1}, t_k) (book eq. 12.61)");
+
+    // ---- SABR (Step 11d) ----
+    m.def("sabr_implied_vol", &sabr_implied_vol, py::arg("F"), py::arg("K"), py::arg("T"),
+          py::arg("alpha"), py::arg("beta"), py::arg("rho"), py::arg("nu"),
+          "Hagan (2002) lognormal implied vol of the SABR model (book eq. 4.61)");
+    m.def("sabr_implied_vols",
+        [](double F, const std::vector<double>& Ks, double T, double alpha, double beta,
+           double rho, double nu) {
+            std::vector<double> v = sabr_implied_vols(F, Ks, T, alpha, beta, rho, nu);
+            py::array_t<double> out(static_cast<py::ssize_t>(v.size()));
+            std::copy(v.begin(), v.end(), out.mutable_data());
+            return out;
+        },
+        py::arg("F"), py::arg("Ks"), py::arg("T"), py::arg("alpha"), py::arg("beta"),
+        py::arg("rho"), py::arg("nu"), "Hagan SABR implied vols for many strikes");
 }

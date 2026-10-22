@@ -21,6 +21,7 @@ add_library(quantlab_core STATIC
     cpp/src/local_vol.cpp
     cpp/src/hull_white.cpp
     cpp/src/swap.cpp
+    cpp/src/sabr.cpp
 )
 target_include_directories(quantlab_core PUBLIC cpp/include)
 set_target_properties(quantlab_core PROPERTIES POSITION_INDEPENDENT_CODE ON)

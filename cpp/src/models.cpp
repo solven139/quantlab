@@ -138,14 +138,14 @@ bool HestonModel::feller_satisfied() const {
 }
 
 std::complex<double> HestonModel::char_fn(double u, double T) const {
-    // TODO 1: Heston characteristic function, book Lemma 8.3.2 (without the discount
-    //         factor, because our Model::char_fn is for log(S(T)/S0)). Six intermediate
-    //         complex numbers, then the result. Members: r_, kappa_, vbar_, gamma_, rho_, v0_.
+    // Book Lemma 8.3.2, without the discount factor (our Model::char_fn is for log(S(T)/S0)).
+    // This form with g and exp(-D1 T) is the numerically stable one ("little Heston trap").
     const std::complex<double> i(0.0, 1.0);
-    const std::complex<double> a = kappa_ - gamma_ * rho_ * i * u;
+    const std::complex<double> a = kappa_ - gamma_ * rho_ * i * u;            // kappa - gamma rho i u
     const std::complex<double> D1 = std::sqrt(a * a + (u * u + i * u) * gamma_ * gamma_);
     const std::complex<double> g = (a - D1) / (a + D1);
     const std::complex<double> e = std::exp(-D1 * T);
+
     const std::complex<double> C = (1.0 - e) / (gamma_ * gamma_ * (1.0 - g * e)) * (a - D1);
     const std::complex<double> A = r_ * i * u * T
         + kappa_ * vbar_ / (gamma_ * gamma_) * ((a - D1) * T - 2.0 * std::log((1.0 - g * e) / (1.0 - g)));
@@ -170,6 +170,46 @@ double HestonModel::cumulant2(double T) const {
 double HestonModel::cumulant4(double) const {
     // Not in closed form here; the COS range then relies on cumulant2 with a wider L (12)
     return 0.0;
+}
+
+// ============================= Bates =============================
+
+BatesModel::BatesModel(double r, double kappa, double vbar, double gamma, double rho, double v0,
+                       double xi, double mu_j, double sigma_j)
+    : heston_(r, kappa, vbar, gamma, rho, v0), xi_(xi), mu_j_(mu_j), sigma_j_(sigma_j) {
+    if (xi < 0.0 || sigma_j < 0.0)
+        throw std::invalid_argument("BatesModel: need xi >= 0, sigma_j >= 0");
+}
+
+double BatesModel::drift_correction() const {
+    return xi_ * (std::exp(mu_j_ + 0.5 * sigma_j_ * sigma_j_) - 1.0);
+}
+
+std::complex<double> BatesModel::jump_char_fn(double u, double T) const {
+    // Jump part of log S(T):  sum of the jumps  minus  omega T  (the drift correction).
+    //   E[e^{iu(...)}] = exp( xi T (E[e^{iuJ}] - 1) - i u omega T ),
+    //   E[e^{iuJ}] = exp(i u mu_j - sigma_j^2 u^2 / 2)
+    const std::complex<double> i(0.0, 1.0);
+    const std::complex<double> jump_cf = std::exp(i * u * mu_j_ - 0.5 * sigma_j_ * sigma_j_ * u * u);
+    return std::exp(xi_ * T * (jump_cf - 1.0) - i * u * drift_correction() * T);
+}
+
+std::complex<double> BatesModel::char_fn(double u, double T) const {
+    // independent parts: the characteristic functions multiply
+    return heston_.char_fn(u, T) * jump_char_fn(u, T);
+}
+
+// Cumulants of a sum of independent parts add. Jump part: n-th cumulant = xi T E[J^n]
+// (plus the drift -omega T in the first one).
+double BatesModel::cumulant1(double T) const {
+    return heston_.cumulant1(T) + xi_ * T * mu_j_ - drift_correction() * T;
+}
+double BatesModel::cumulant2(double T) const {
+    return heston_.cumulant2(T) + xi_ * T * (mu_j_ * mu_j_ + sigma_j_ * sigma_j_);
+}
+double BatesModel::cumulant4(double T) const {
+    const double m = mu_j_, s2 = sigma_j_ * sigma_j_;
+    return heston_.cumulant4(T) + xi_ * T * (m * m * m * m + 6.0 * m * m * s2 + 3.0 * s2 * s2);
 }
 
 } // namespace quantlab
