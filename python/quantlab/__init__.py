@@ -102,3 +102,7 @@ from .density import (ImpliedDensity, implied_density, otm_ivs_from_quotes,  # n
                       smooth_vols)
 
 __all__ += ["ImpliedDensity", "implied_density", "otm_ivs_from_quotes", "smooth_vols"]
+
+from .pooled import PooledResult, calibrate_pooled  # noqa: E402
+
+__all__ += ["PooledResult", "calibrate_pooled"]
